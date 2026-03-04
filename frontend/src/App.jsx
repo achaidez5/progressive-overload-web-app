@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import WorkoutForm from './components/WorkoutForm'
 
 function App() {
   const [backendStatus, setBackendStatus] = useState('checking')
@@ -19,13 +20,18 @@ function App() {
   }, [])
 
   return (
-    <div className="app">
-      <h1>Progressive Overload Tracker</h1>
-      <p className={`status ${backendStatus}`}>
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center px-4 py-12 gap-6">
+      <h1 className="text-3xl font-bold">Progressive Overload Tracker</h1>
+      <p className={
+        backendStatus === 'connected' ? 'text-green-400 text-sm' :
+        backendStatus === 'offline' ? 'text-red-400 text-sm' :
+        'text-gray-500 text-sm'
+      }>
         {backendStatus === 'checking' && 'Checking backend...'}
         {backendStatus === 'connected' && 'Backend connected'}
         {backendStatus === 'offline' && 'Backend offline'}
       </p>
+      <WorkoutForm />
     </div>
   )
 }
