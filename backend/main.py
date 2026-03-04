@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from database import engine
+from models import Workout  # noqa: F401 — imported so Base.metadata sees it
+
+from database import Base
+
 app = FastAPI()
 
 app.add_middleware(
@@ -10,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+Base.metadata.create_all(bind=engine)
+print("DB initialized")
 
 
 @app.get("/")
