@@ -9,6 +9,7 @@ class WorkoutDay(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     date = Column(String, unique=True, nullable=False, index=True)  # "YYYY-MM-DD"
+    title = Column(String, nullable=True)  # e.g. "Push Day"
 
     exercises = relationship(
         "Exercise", back_populates="workout_day", cascade="all, delete-orphan"

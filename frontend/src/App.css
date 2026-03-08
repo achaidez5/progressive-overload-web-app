@@ -1,1 +1,57 @@
 @import "tailwindcss";
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0f0f13;
+  color: #f0f0ff;
+  overscroll-behavior: none;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e1e2e; border-radius: 2px; }
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea { font-family: inherit; outline: none; }
+
+/* Card expand / collapse */
+.card-body {
+  overflow: hidden;
+  transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+.card-body.expanded { max-height: 2000px; opacity: 1; }
+.card-body.collapsed { max-height: 0; opacity: 0; }
+
+/* Bottom sheet */
+.sheet-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 50;
+  animation: fadeIn 0.2s ease;
+}
+.sheet-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #14141e;
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid #1e1e2e;
+  z-index: 51;
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.gradient-text {
+  background: linear-gradient(135deg, #00f096, #0090ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

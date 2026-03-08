@@ -1,5 +1,8 @@
+from datetime import date as date_type, timedelta
+
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine
@@ -9,10 +12,12 @@ from schemas import (
     ExerciseCreate,
     ExerciseResponse,
     ExerciseUpdate,
+    RecentDayResponse,
     SetCreate,
     SetResponse,
     SetUpdate,
     WorkoutDayResponse,
+    WorkoutDayTitleUpdate,
 )
 
 app = FastAPI()
@@ -26,6 +31,14 @@ app.add_middleware(
 )
 
 Base.metadata.create_all(bind=engine)
+
+# Runtime migration: add title column to existing databases
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE workout_days ADD COLUMN title TEXT"))
+        _conn.commit()
+    except Exception:
+        pass  # Column already exists
 
 
 def get_db():
@@ -45,6 +58,21 @@ def health_check():
 
 # ── Days ──────────────────────────────────────────────────────────────────────
 
+@app.get("/days/recent/list", response_model=list[RecentDayResponse])
+def get_recent_days(limit: int = 5, db: Session = Depends(get_db)):
+    days = (
+        db.query(WorkoutDay)
+        .filter(WorkoutDay.exercises.any())
+        .order_by(WorkoutDay.date.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {"date": d.date, "title": d.title, "exercise_count": len(d.exercises)}
+        for d in days
+    ]
+
+
 @app.get("/days/{date}", response_model=WorkoutDayResponse)
 def get_or_create_day(date: str, db: Session = Depends(get_db)):
     day = db.query(WorkoutDay).filter(WorkoutDay.date == date).first()
@@ -53,6 +81,19 @@ def get_or_create_day(date: str, db: Session = Depends(get_db)):
         db.add(day)
         db.commit()
         db.refresh(day)
+    return day
+
+
+@app.put("/days/{date}", response_model=WorkoutDayResponse)
+def update_day_title(date: str, body: WorkoutDayTitleUpdate, db: Session = Depends(get_db)):
+    day = db.query(WorkoutDay).filter(WorkoutDay.date == date).first()
+    if not day:
+        day = WorkoutDay(date=date, title=body.title)
+        db.add(day)
+    else:
+        day.title = body.title
+    db.commit()
+    db.refresh(day)
     return day
 
 
@@ -74,7 +115,39 @@ def get_calendar_month(year: int, month: int, db: Session = Depends(get_db)):
         .filter(WorkoutDay.date.like(f"{prefix}%"))
         .all()
     )
-    return [{"date": d.date} for d in days if d.exercises]
+    return [
+        {"date": d.date, "title": d.title, "exercise_count": len(d.exercises)}
+        for d in days if d.exercises
+    ]
+
+
+# ── Streak ────────────────────────────────────────────────────────────────────
+
+@app.get("/streak")
+def get_streak(db: Session = Depends(get_db)):
+    dates_rows = (
+        db.query(WorkoutDay.date)
+        .filter(WorkoutDay.exercises.any())
+        .all()
+    )
+    dates = {row[0] for row in dates_rows}
+
+    today = date_type.today()
+    streak = 0
+    check = today
+
+    while str(check) in dates:
+        streak += 1
+        check = check - timedelta(days=1)
+
+    # Streak still active if last workout was yesterday
+    if streak == 0:
+        check = today - timedelta(days=1)
+        while str(check) in dates:
+            streak += 1
+            check = check - timedelta(days=1)
+
+    return {"streak": streak}
 
 
 # ── Exercises ─────────────────────────────────────────────────────────────────
@@ -152,10 +225,11 @@ def delete_set(set_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-# ── Progressive Overload History ──────────────────────────────────────────────
+# ── Progressive Overload ──────────────────────────────────────────────────────
 
 @app.get("/exercises/{name}/history")
 def get_exercise_history(name: str, db: Session = Depends(get_db)):
+    """Return the last 2 sessions for delta badge computation."""
     exercises = (
         db.query(Exercise)
         .filter(Exercise.name == name)
@@ -178,3 +252,18 @@ def get_exercise_history(name: str, db: Session = Depends(get_db)):
             "sets": sets_data,
         })
     return result
+
+
+@app.get("/exercises/{name}/max")
+def get_exercise_max(name: str, exclude_date: str = None, db: Session = Depends(get_db)):
+    """Return the all-time max weight, optionally excluding a date (used for PR detection)."""
+    query = (
+        db.query(func.max(Set.weight))
+        .join(Exercise)
+        .join(WorkoutDay)
+        .filter(Exercise.name == name)
+    )
+    if exclude_date:
+        query = query.filter(WorkoutDay.date != exclude_date)
+    max_weight = query.scalar() or 0
+    return {"max_weight": float(max_weight)}

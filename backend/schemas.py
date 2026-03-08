@@ -48,15 +48,28 @@ class ExerciseResponse(BaseModel):
 
 # ── WorkoutDay schemas ────────────────────────────────────────────────────────
 
+class WorkoutDayTitleUpdate(BaseModel):
+    title: Optional[str] = None
+
+
 class WorkoutDayResponse(BaseModel):
     id: int
     date: str
+    title: Optional[str] = None
     exercises: list[ExerciseResponse] = []
 
     model_config = {"from_attributes": True}
 
 
-# ── Calendar schemas ──────────────────────────────────────────────────────────
+# ── Calendar / Recent schemas ─────────────────────────────────────────────────
 
 class CalendarDayResponse(BaseModel):
     date: str
+    title: Optional[str] = None
+    exercise_count: int = 0
+
+
+class RecentDayResponse(BaseModel):
+    date: str
+    title: Optional[str] = None
+    exercise_count: int
