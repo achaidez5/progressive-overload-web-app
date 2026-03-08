@@ -1,37 +1,15 @@
-import { useState, useEffect } from 'react'
-import WorkoutForm from './components/WorkoutForm'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import CalendarPage from './pages/CalendarPage'
+import DayPage from './pages/DayPage'
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState('checking')
-
-  useEffect(() => {
-    fetch('http://localhost:8000/')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'ok') {
-          setBackendStatus('connected')
-        } else {
-          setBackendStatus('offline')
-        }
-      })
-      .catch(() => {
-        setBackendStatus('offline')
-      })
-  }, [])
-
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center px-4 py-12 gap-6">
-      <h1 className="text-3xl font-bold">Progressive Overload Tracker</h1>
-      <p className={
-        backendStatus === 'connected' ? 'text-green-400 text-sm' :
-        backendStatus === 'offline' ? 'text-red-400 text-sm' :
-        'text-gray-500 text-sm'
-      }>
-        {backendStatus === 'checking' && 'Checking backend...'}
-        {backendStatus === 'connected' && 'Backend connected'}
-        {backendStatus === 'offline' && 'Backend offline'}
-      </p>
-      <WorkoutForm />
+    <div className="min-h-screen" style={{ backgroundColor: '#0a0a0a', color: '#f5f5f5' }}>
+      <Routes>
+        <Route path="/" element={<CalendarPage />} />
+        <Route path="/day/:date" element={<DayPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   )
 }

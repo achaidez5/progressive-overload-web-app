@@ -2,16 +2,61 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-class WorkoutCreate(BaseModel):
-    exercise: str
-    sets: int
+# ── Set schemas ──────────────────────────────────────────────────────────────
+
+class SetCreate(BaseModel):
+    exercise_id: int
+    set_number: int
     reps: int
     weight: float
-    date: str
-    notes: Optional[str] = None
 
 
-class WorkoutResponse(WorkoutCreate):
+class SetUpdate(BaseModel):
+    reps: Optional[int] = None
+    weight: Optional[float] = None
+
+
+class SetResponse(BaseModel):
     id: int
+    exercise_id: int
+    set_number: int
+    reps: int
+    weight: float
 
     model_config = {"from_attributes": True}
+
+
+# ── Exercise schemas ──────────────────────────────────────────────────────────
+
+class ExerciseCreate(BaseModel):
+    name: str
+    date: str  # "YYYY-MM-DD" — used to look up or create the WorkoutDay
+
+
+class ExerciseUpdate(BaseModel):
+    name: str
+
+
+class ExerciseResponse(BaseModel):
+    id: int
+    name: str
+    workout_day_id: int
+    sets: list[SetResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+# ── WorkoutDay schemas ────────────────────────────────────────────────────────
+
+class WorkoutDayResponse(BaseModel):
+    id: int
+    date: str
+    exercises: list[ExerciseResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+# ── Calendar schemas ──────────────────────────────────────────────────────────
+
+class CalendarDayResponse(BaseModel):
+    date: str
